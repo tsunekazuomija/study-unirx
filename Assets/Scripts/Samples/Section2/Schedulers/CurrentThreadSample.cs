@@ -1,5 +1,6 @@
 using System.Threading;
 using System.Threading.Tasks;
+using System.Collections;
 using UniRx;
 using UnityEngine;
 
@@ -22,11 +23,20 @@ namespace Samples.Section2.Schedulers
                 });
             
             // メインスレッドでOnNextを実行
-            subject.OnNext(Unit.Default);
+            subject.OnNext(Unit.Default); // 1
 
             // 別スレッドからOnNextを発行
-            Task.Run(() => subject.OnNext(Unit.Default)); // debugされないが？
+            Task.Run(() => subject.OnNext(Unit.Default));
 
+            // Task.Runが行われる前にOnCompletedを実行してしまうので、コメントアウト
+            // subject.OnCompleted();
+
+            StartCoroutine(OnCompletedCoroutine(subject));  // 129800 <- 連番ではないぽい
+        }
+
+        private IEnumerator OnCompletedCoroutine(Subject<Unit> subject)
+        {
+            yield return new WaitForSeconds(1.0f);
             subject.OnCompleted();
         }
     }
