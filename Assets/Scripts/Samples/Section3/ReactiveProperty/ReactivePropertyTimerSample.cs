@@ -1,18 +1,30 @@
 using System.Collections;
-using System.Collections.Generic;
+using UniRx;
 using UnityEngine;
 
-public class ReactivePropertyTimerSample : MonoBehaviour
+namespace Samples.Section3.ReactiveProperty
 {
-    // Start is called before the first frame update
-    void Start()
+    public class ReactivePropertyTimerSample : MonoBehaviour
     {
-        
-    }
 
-    // Update is called once per frame
-    void Update()
-    {
-        
+        [SerializeField]
+        private IntReactiveProperty _current = new IntReactiveProperty(60);
+
+        public IReadOnlyReactiveProperty<int> CurrentTime => _current;
+
+        private void Start()
+        {
+            StartCoroutine(CountDownCoroutine());
+            _current.AddTo(this);
+        }
+
+        private IEnumerator CountDownCoroutine()
+        {
+            while (_current.Value > 0)
+            {
+                _current.Value--;
+                yield return new WaitForSeconds(1);
+            }
+        }
     }
 }
