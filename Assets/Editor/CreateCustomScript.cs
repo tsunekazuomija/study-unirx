@@ -4,45 +4,32 @@ using System.IO;
 
 public class CreateCustomScript
 {
-    [MenuItem("Assets/Create/Custom C# Script", false, 80)]
+    private const string MenuItemPath = "Assets/Create/Custom C# Script";
+    private const int MenuItemPriority = 80;
+    private const string DefaultScriptName = "NewScript.cs";
+    private const string TemplatePath = "Assets/Editor/CustomScriptTemplates/CustomScriptTemplate.txt";
+    private const string ScriptsFolderPath = "Assets/Scripts/";
+
+    [MenuItem(MenuItemPath, false, MenuItemPriority)]
     public static void CreateNewScript()
     {
-        string path = GetSelectedPathOrFallback();
-        string defaultName = "NewScript.cs";
-
-        string filePath = EditorUtility.SaveFilePanelInProject(
-            "Save Script",
-            defaultName,
-            "cs",
-            "Please enter a file name to save the script to.",
-            path
-        );
-    
-        Debug.Log(filePath);
+        string selectedPath = GetSelectedPath();
+        string filePath = ShowSaveFilePanel(selectedPath);
 
         if (string.IsNullOrEmpty(filePath))
         {
-            // if cancelled, do nothing
+            // User cancelled the save operation
             return;
         }
 
-        string fileName = Path.GetFileName(filePath);
+        string scriptName = Path.GetFileNameWithoutExtension(filePath);
+        string namespaceName = GetNamespaceFromPath(selectedPath);
 
-        string templatePath = "Assets/Editor/CustomScriptTemplates/CustomScriptTemplate.txt";
-
-        string namespaceName = GetNamespaceFromPath(path);
-
-        string templateContent = File.ReadAllText(templatePath);
-        templateContent = templateContent.Replace("#NAMESPACE#", namespaceName);
-        templateContent = templateContent.Replace("#SCRIPTNAME#", fileName.Replace(".cs", ""));
-
-        // string filePath = Path.Combine(path, fileName);
-        File.WriteAllText(filePath, templateContent);
-
+        CreateScriptFile(filePath, scriptName, namespaceName);
         AssetDatabase.Refresh();
     }
 
-    private static string GetSelectedPathOrFallback()
+    private static string GetSelectedPath()
     {
         string path = "Assets";
         foreach (Object obj in Selection.GetFiltered(typeof(Object), SelectionMode.Assets))
@@ -57,15 +44,34 @@ public class CreateCustomScript
         return path;
     }
 
+    private static string ShowSaveFilePanel(string initialPath)
+    {
+        return EditorUtility.SaveFilePanelInProject(
+            "Save Script",
+            DefaultScriptName,
+            "cs",
+            "Please enter a file name to save the script to.",
+            initialPath
+        );
+    }
+
     private static string GetNamespaceFromPath(string path)
     {
-        string scriptsFolder = "Assets/Scripts/";
-        if (!path.Contains(scriptsFolder))
+        if (!path.Contains(ScriptsFolderPath))
         {
-            return "";
+            return string.Empty;
         }
-        int startIndex = path.IndexOf(scriptsFolder) + scriptsFolder.Length;
-        string namespaceName = path.Substring(startIndex).Replace("/", ".");
-        return namespaceName;
+
+        int startIndex = path.IndexOf(ScriptsFolderPath) + ScriptsFolderPath.Length;
+        return path.Substring(startIndex).Replace("/", ".");
+    }
+
+    private static void CreateScriptFile(string filePath, string scriptName, string namespaceName)
+    {
+        string templateContent = File.ReadAllText(TemplatePath);
+        templateContent = templateContent.Replace("#NAMESPACE#", namespaceName);
+        templateContent = templateContent.Replace("#SCRIPTNAME#", scriptName);
+
+        File.WriteAllText(filePath, templateContent);
     }
 }
